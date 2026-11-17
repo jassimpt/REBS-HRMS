@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/text_constants.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../leave/models/leave_balance_model.dart';
+import '../models/leave_balance_model.dart';
 
 class LeaveBalanceCard extends StatelessWidget {
   const LeaveBalanceCard({required this.balance, super.key});

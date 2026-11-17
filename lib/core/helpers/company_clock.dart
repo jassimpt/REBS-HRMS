@@ -41,6 +41,19 @@ abstract final class CompanyClock {
     return DateFormat('h:mm a').format(inZone(instant, timezone));
   }
 
+  // Parses a strict ISO calendar date independently of the device timezone.
+  static DateTime parseCalendarDate(String value) {
+    final date = DateFormat('yyyy-MM-dd').parseStrict(value, true);
+    if (DateFormat('yyyy-MM-dd').format(date) != value) {
+      throw const FormatException('Invalid calendar date');
+    }
+    return date;
+  }
+
+  // Formats a leave calendar date including its year.
+  static String calendarDate(String value) =>
+      DateFormat('dd MMM yyyy').format(parseCalendarDate(value));
+
   // Formats an attendance calendar date without applying device timezone.
   static String date(String date) {
     return DateFormat('EEE, dd MMM').format(DateTime.parse(date));

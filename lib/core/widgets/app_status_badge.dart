@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../helpers/colors.dart';
 
-enum StatusTone { neutral, success, warning }
+enum StatusTone { neutral, success, warning, error }
 
 class AppStatusBadge extends StatelessWidget {
   const AppStatusBadge({
@@ -17,6 +17,7 @@ class AppStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (foreground, background) = switch (tone) {
+      StatusTone.error => (AppColors.error, AppColors.errorContainer),
       StatusTone.neutral => (AppColors.textSecondary, AppColors.background),
       StatusTone.success => (
         AppColors.onPrimaryContainer,

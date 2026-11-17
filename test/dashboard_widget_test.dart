@@ -4,7 +4,7 @@ import 'package:rebs_hrms/core/constants/text_constants.dart';
 import 'package:rebs_hrms/core/theme/app_theme.dart';
 import 'package:rebs_hrms/features/dashboard/states/dashboard_state.dart';
 import 'package:rebs_hrms/features/dashboard/widgets/dashboard_content.dart';
-import 'package:rebs_hrms/features/dashboard/widgets/dashboard_loading.dart';
+import 'package:rebs_hrms/core/widgets/app_loading_state.dart';
 import 'package:rebs_hrms/features/dashboard/widgets/dashboard_notice.dart';
 import 'support/dashboard_fixture.dart';
 
@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: const Scaffold(body: DashboardLoading()),
+        home: const Scaffold(body: AppLoadingState()),
       ),
     );
     expect(find.text(TextConstants.loadingDashboard), findsOneWidget);

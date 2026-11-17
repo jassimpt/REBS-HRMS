@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/text_constants.dart';
-import '../../../core/widgets/app_card.dart';
+import '../constants/text_constants.dart';
+import 'app_card.dart';
 
-class DashboardError extends StatelessWidget {
-  const DashboardError({required this.onRetry, super.key});
+class AppErrorState extends StatelessWidget {
+  const AppErrorState({
+    required this.onRetry,
+    this.title = TextConstants.dashboardErrorTitle,
+    super.key,
+  });
+
+  final String title;
 
   final VoidCallback onRetry;
 
@@ -22,7 +28,7 @@ class DashboardError extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            TextConstants.dashboardErrorTitle,
+            title,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleLarge,
           ),

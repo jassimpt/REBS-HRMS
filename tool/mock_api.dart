@@ -5,6 +5,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:rebs_hrms/features/attendance/models/attendance_event_model.dart';
 
 import 'services/mock_attendance_service.dart';
+import 'services/mock_leave_service.dart';
+import 'package:rebs_hrms/features/leave/models/leave_application_model.dart';
 
 import 'package:rebs_hrms/core/helpers/company_clock.dart';
 
@@ -17,10 +19,11 @@ const mockScenarios = {
   'invalid-response',
   'duplicate-attendance',
   'timeout-after-accept',
+  'leave-validation-rejection',
 };
 const todayStatuses = {'not-checked-in', 'checked-in', 'checked-out'};
 
-// Starts the local HTTP API with repeatable dashboard scenarios.
+// Starts the local HTTP API with repeatable attendance and leave scenarios.
 Future<void> main(List<String> arguments) async {
   final options = <String, String>{};
   for (final argument in arguments) {
@@ -74,10 +77,12 @@ class MockApiServer {
   final double officeLongitude;
   final String? storagePath;
   late final MockAttendanceService _attendanceService;
+  late final MockLeaveService _leaveService;
   String? _fixtureKey;
   List<Map<String, dynamic>> _fixtureRecords = [];
   HttpServer? _server;
   final receivedAttendanceEvents = <AttendanceEventModel>[];
+  final receivedLeaveApplications = <LeaveApplicationModel>[];
 
   int get port => _server!.port;
 
@@ -90,6 +95,11 @@ class MockApiServer {
     CompanyClock.inZone(DateTime.now(), timezone);
     _attendanceService = MockAttendanceService(storagePath: storagePath);
     await _attendanceService.initialize();
+    _leaveService = MockLeaveService(
+      timezone: timezone,
+      storagePath: storagePath == null ? null : '$storagePath.leave.json',
+    );
+    await _leaveService.initialize();
     _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
     _server!.listen(_handle);
   }
@@ -124,7 +134,8 @@ class MockApiServer {
       }
       if (request.method != 'GET' &&
           !(request.method == 'POST' &&
-              request.uri.path == '/attendance/events')) {
+              (request.uri.path == '/attendance/events' ||
+                  request.uri.path == '/leave/requests'))) {
         _reply(request, {
           'message': 'Method not implemented in this checkpoint',
         }, status: 405);
@@ -159,6 +170,22 @@ class MockApiServer {
           officeLatitude: officeLatitude,
           officeLongitude: officeLongitude,
           forceConflict: selectedScenario == 'duplicate-attendance',
+        );
+        if (selectedScenario == 'timeout-after-accept') {
+          await Future<void>.delayed(const Duration(seconds: 12));
+        }
+        _reply(request, response);
+        return;
+      }
+      if (request.uri.path == '/leave/requests' && request.method == 'POST') {
+        final body =
+            jsonDecode(await utf8.decoder.bind(request).join())
+                as Map<String, dynamic>;
+        final application = LeaveApplicationModel.fromJson(body);
+        receivedLeaveApplications.add(application);
+        final response = await _leaveService.submit(
+          application,
+          forceReject: selectedScenario == 'leave-validation-rejection',
         );
         if (selectedScenario == 'timeout-after-accept') {
           await Future<void>.delayed(const Duration(seconds: 12));
@@ -202,10 +229,19 @@ class MockApiServer {
           }
           _reply(request, {'records': records.take(limit).toList()});
         case '/leave/balance':
-          _reply(request, {'casual': 8, 'sick': 5});
+          _reply(request, _leaveService.balance().toJson());
+        case '/leave/requests':
+          _reply(request, {
+            'requests': _leaveService
+                .requests(includeFixtures: selectedScenario != 'empty')
+                .map((request) => request.toJson())
+                .toList(),
+          });
         default:
           _reply(request, {'message': 'Endpoint not found'}, status: 404);
       }
+    } on MockLeaveException catch (error) {
+      _reply(request, {'code': error.code}, status: error.status);
     } on MockAttendanceException catch (error) {
       _reply(request, {'code': error.code}, status: error.status);
     } catch (_) {

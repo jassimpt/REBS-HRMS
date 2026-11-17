@@ -13,6 +13,9 @@ class LeaveBalanceModel {
 
   int get total => casual + sick;
 
+  // Serializes the available days for mock API responses.
+  Map<String, dynamic> toJson() => {'casual': casual, 'sick': sick};
+
   // Parses the remaining balance for each supported leave type.
   factory LeaveBalanceModel.fromJson(Map<String, dynamic> json) {
     return LeaveBalanceModel(

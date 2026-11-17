@@ -5,18 +5,76 @@ abstract final class TextConstants {
   static const overview = 'Overview';
   static const attendance = 'Attendance';
   static const leave = 'Leave';
+  static const applyForLeave = 'Apply for leave';
+  static const leaveType = 'Leave type';
+  static const startDate = 'Start date';
+  static const endDate = 'End date';
+  static const leaveReason = 'Reason';
+  static const leaveReasonHint = 'Tell us why you need time away';
+  static const leaveReasonHelp = 'At least 10 non-whitespace characters.';
+  static const selectDate = 'Select date';
+  static const calendarDaysNotice =
+      'All calendar days count, including weekends and holidays.';
+  static const submitLeave = 'Submit request';
+  static const submittingLeave = 'Submitting your request…';
+  static const leaveRequests = 'Your requests';
+  static const leaveHistorySubtitle =
+      'Track your leave applications and their status.';
+  static const noLeaveTitle = 'No leave requests yet';
+  static const noLeaveDescription =
+      'Your submitted leave requests will appear here.';
+  static const loadingLeave = 'Loading leave requests';
+  static const leaveLoadErrorTitle = 'Leave information is unavailable';
+  static const leaveOfflineCached =
+      'Unable to reach the server. Your saved leave requests are available below. Submission requires a connection.';
+  static const leaveOfflineNoCache =
+      'Connect to the server to load leave information. Submission requires a connection.';
+  static const leaveServerError =
+      'The server could not load leave information. Please try again.';
+  static const leaveInvalidResponse =
+      'The leave response could not be verified. Please try again.';
+  static const leaveCacheError =
+      'Your leave information is current, but could not be saved for offline viewing.';
+  static const leaveNeedsEmployee =
+      'Refresh employee details before applying for leave.';
+  static const leaveSubmitted = 'Your leave request has been submitted.';
+  static const leaveSubmitOffline =
+      'Leave submission requires a connection to the server. Your form has been kept so you can try again.';
+  static const leaveSubmitTimeout =
+      'The server did not respond in time. Refresh your requests or retry this unchanged form to check its outcome safely.';
+  static const leaveSubmitRejected =
+      'The server could not accept this request. Review the form and try again.';
+  static const leaveSubmitServerError =
+      'The server is unavailable. Your form has been kept so you can try again.';
+  static const pending = 'Pending';
+  static const approved = 'Approved';
+
+  // Provides field validation text without embedding labels in form widgets.
+  static String? leaveValidation(String? issue) => switch (issue) {
+    'required' => 'Choose a date.',
+    'invalidDate' => 'Choose a valid date.',
+    'startInPast' => 'Start date cannot be before the current company date.',
+    'endBeforeStart' => 'End date cannot be before the start date.',
+    'reasonTooShort' => 'Enter at least 10 non-whitespace characters.',
+    'balanceExceeded' =>
+      'Requested days exceed the available balance for this leave type.',
+    'overlapping' => 'These dates overlap a Pending or Approved leave request.',
+    _ => null,
+  };
+
+  // Formats the requested duration using inclusive calendar days.
+  static String leaveDays(int days) =>
+      '$days calendar ${days == 1 ? 'day' : 'days'}';
+
+  // Labels a request with its supported leave type.
+  static String leaveRequestTitle(String type) =>
+      '${type == 'casual' ? casual : sick} leave';
+
+  // Formats the start and end calendar dates of a leave request.
+  static String leaveDateRange(String start, String end) => '$start – $end';
   static const overviewSubtitle = 'A clear view of your working day.';
   static const attendanceSubtitle = 'Keep track of your time at work.';
   static const leaveSubtitle = 'Make room for your time away.';
-  static const overviewTitle = 'Your workday at a glance';
-  static const overviewDescription =
-      'Your employee details, daily summary and recent attendance will appear here.';
-  static const attendanceTitle = 'Your attendance, together';
-  static const attendanceDescription =
-      'Your check-in, check-out and attendance history will appear here.';
-  static const leaveTitle = 'Plan your time away';
-  static const leaveDescription =
-      'Your leave balance and requests will appear here.';
   static const refresh = 'Refresh';
   static const retry = 'Try again';
   static const loadingDashboard = 'Loading your workspace';
