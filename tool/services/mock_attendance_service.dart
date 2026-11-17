@@ -81,7 +81,12 @@ class MockAttendanceService {
   }) async {
     final existing = _accepted[event.id];
     if (existing != null) {
-      if (jsonEncode(existing['payload']) != jsonEncode(event.toJson())) {
+      if (jsonEncode(
+            AttendanceEventModel.fromJson(
+              Map<String, dynamic>.from(existing['payload'] as Map),
+            ).toJson(),
+          ) !=
+          jsonEncode(event.toJson())) {
         throw const MockAttendanceException('idempotency_mismatch');
       }
       return {'event_id': event.id, 'record': existing['record']};

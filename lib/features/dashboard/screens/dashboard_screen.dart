@@ -5,6 +5,7 @@ import '../../../core/constants/text_constants.dart';
 import '../../workspace/widgets/workspace_header.dart';
 import '../controllers/dashboard_controller.dart';
 import '../../attendance/controllers/attendance_controller.dart';
+import '../../attendance/widgets/attendance_sync_panel.dart';
 import '../widgets/dashboard_content.dart';
 import '../widgets/dashboard_error.dart';
 import '../../../core/widgets/app_page_heading.dart';
@@ -57,6 +58,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    const AttendanceSyncPanel(hideWhenIdle: true),
                     if (state.isLoading)
                       const DashboardLoading()
                     else if (data == null)

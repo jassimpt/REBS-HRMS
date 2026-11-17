@@ -8,6 +8,8 @@ import '../../dashboard/widgets/dashboard_error.dart';
 import '../../dashboard/widgets/dashboard_loading.dart';
 import '../../workspace/widgets/workspace_header.dart';
 import '../controllers/attendance_controller.dart';
+import '../controllers/attendance_sync_controller.dart';
+import '../widgets/attendance_sync_panel.dart';
 import '../widgets/attendance_action_card.dart';
 import '../widgets/attendance_event_item.dart';
 import '../widgets/attendance_feedback_banner.dart';
@@ -49,6 +51,7 @@ class AttendanceScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 24),
+                  const AttendanceSyncPanel(),
                   if (state.feedback != null) ...[
                     AttendanceFeedbackBanner(
                       feedback: state.feedback!,
@@ -72,8 +75,9 @@ class AttendanceScreen extends StatelessWidget {
                       summary: summary,
                       isBusy: state.isSubmitting,
                       onAction: (action) async {
+                        final sync = context.read<AttendanceSyncController>();
                         if (await controller.submit(action, data)) {
-                          await dashboard.load();
+                          await sync.syncNow();
                         }
                       },
                     ),

@@ -6,6 +6,7 @@ import '../../../core/helpers/company_clock.dart';
 import '../../../core/network/api_exception.dart';
 import '../../attendance/models/attendance_record_model.dart';
 import '../../attendance/services/attendance_service.dart';
+import '../../attendance/services/attendance_cache_service.dart';
 import '../../leave/models/leave_balance_model.dart';
 import '../../leave/services/leave_balance_service.dart';
 import '../models/dashboard_snapshot_model.dart';
@@ -18,6 +19,13 @@ class DashboardController extends ChangeNotifier {
   DashboardController() {
     _lifecycle = AppLifecycleListener(onResume: _resume, onPause: _pause);
     _startClock();
+    _attendanceSubscription = AttendanceCacheService().changes.listen((_) {
+      _attendanceRefresh?.cancel();
+      _attendanceRefresh = Timer(
+        const Duration(milliseconds: 500),
+        () => load(queueIfBusy: true),
+      );
+    });
     load();
   }
 
@@ -27,6 +35,9 @@ class DashboardController extends ChangeNotifier {
   final _cacheService = DashboardCacheService();
   late final AppLifecycleListener _lifecycle;
   Timer? _clock;
+  Timer? _attendanceRefresh;
+  StreamSubscription<void>? _attendanceSubscription;
+  bool _reloadAfterCurrent = false;
   bool _disposed = false;
   bool _busy = false;
   bool _cacheRead = false;
@@ -43,8 +54,12 @@ class DashboardController extends ChangeNotifier {
   }
 
   // Restores cached data, refreshes each module and saves a complete snapshot.
-  Future<void> load() async {
-    if (_busy || _disposed) return;
+  Future<void> load({bool queueIfBusy = false}) async {
+    if (_disposed) return;
+    if (_busy) {
+      if (queueIfBusy) _reloadAfterCurrent = true;
+      return;
+    }
     _busy = true;
     try {
       var cached = _state.data;
@@ -110,6 +125,10 @@ class DashboardController extends ChangeNotifier {
       );
     } finally {
       _busy = false;
+      if (_reloadAfterCurrent && !_disposed) {
+        _reloadAfterCurrent = false;
+        load();
+      }
     }
   }
 
@@ -144,6 +163,8 @@ class DashboardController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _clock?.cancel();
+    _attendanceRefresh?.cancel();
+    _attendanceSubscription?.cancel();
     _lifecycle.dispose();
     super.dispose();
   }

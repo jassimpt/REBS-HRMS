@@ -77,6 +77,7 @@ class MockApiServer {
   String? _fixtureKey;
   List<Map<String, dynamic>> _fixtureRecords = [];
   HttpServer? _server;
+  final receivedAttendanceEvents = <AttendanceEventModel>[];
 
   int get port => _server!.port;
 
@@ -150,6 +151,7 @@ class MockApiServer {
             jsonDecode(await utf8.decoder.bind(request).join())
                 as Map<String, dynamic>;
         final event = AttendanceEventModel.fromJson(body);
+        receivedAttendanceEvents.add(event);
         final response = await _attendanceService.submit(
           event,
           _fixtures(),

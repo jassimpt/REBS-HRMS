@@ -6,4 +6,11 @@ class ApiException implements Exception {
   final ApiFailure failure;
   final int? statusCode;
   final String? code;
+
+  bool get isPermanentRejection =>
+      statusCode != null &&
+      statusCode! >= 400 &&
+      statusCode! < 500 &&
+      statusCode != 408 &&
+      statusCode != 429;
 }

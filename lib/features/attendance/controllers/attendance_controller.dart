@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/helpers/company_clock.dart';
-import '../../../core/network/api_exception.dart';
 import '../../dashboard/models/dashboard_snapshot_model.dart';
 import '../models/attendance_action.dart';
 import '../models/attendance_event_model.dart';
@@ -10,20 +11,21 @@ import '../models/attendance_sync_status.dart';
 import '../services/attendance_cache_service.dart';
 import '../services/attendance_location_service.dart';
 import '../services/attendance_rules_service.dart';
-import '../services/attendance_service.dart';
 import '../services/attendance_summary_service.dart';
 import '../states/attendance_state.dart';
 import '../states/attendance_summary_state.dart';
 
 class AttendanceController extends ChangeNotifier {
   AttendanceController() {
+    _subscription = _cache.changes.listen((_) => _refreshEvents());
     load();
   }
 
   final _cache = AttendanceCacheService();
   final _location = AttendanceLocationService();
   final _rules = AttendanceRulesService();
-  final _service = AttendanceService();
+  StreamSubscription<void>? _subscription;
+  String? _lastEventId;
   final _summary = AttendanceSummaryService();
   AttendanceState _state = const AttendanceState();
   bool _disposed = false;
@@ -56,13 +58,57 @@ class AttendanceController extends ChangeNotifier {
   Future<void> load() async {
     if (_state.isSubmitting) return;
     try {
-      _publish(events: await _cache.read());
+      await _refreshEvents();
     } catch (_) {
       _publish(feedback: AttendanceFeedback.storageError);
     }
   }
 
-  // Validates GPS and daily rules, saves first, then attempts one online submission.
+  // Restores event statuses without clearing an in-progress action.
+  Future<void> _refreshEvents() async {
+    if (_disposed) return;
+    try {
+      final events = await _cache.read();
+      _publish(
+        events: events,
+        isSubmitting: _state.isSubmitting,
+        feedback: _feedbackFor(events),
+      );
+    } catch (_) {
+      _publish(
+        isSubmitting: _state.isSubmitting,
+        feedback: AttendanceFeedback.storageError,
+      );
+    }
+  }
+
+  // Keeps the latest action's message consistent with its delivery status.
+  AttendanceFeedback? _feedbackFor(List<AttendanceEventModel> events) {
+    const deliveryMessages = {
+      AttendanceFeedback.savedPending,
+      AttendanceFeedback.checkedIn,
+      AttendanceFeedback.checkedOut,
+      AttendanceFeedback.rejected,
+    };
+    if (_state.feedback != null &&
+        !deliveryMessages.contains(_state.feedback)) {
+      return _state.feedback;
+    }
+    for (final event in events) {
+      if (event.id != _lastEventId) continue;
+      return switch (event.status) {
+        AttendanceSyncStatus.pending => AttendanceFeedback.savedPending,
+        AttendanceSyncStatus.rejected => AttendanceFeedback.rejected,
+        AttendanceSyncStatus.synced =>
+          event.action == AttendanceAction.checkIn
+              ? AttendanceFeedback.checkedIn
+              : AttendanceFeedback.checkedOut,
+      };
+    }
+    return _state.feedback;
+  }
+
+  // Validates GPS and daily rules before adding one durable attendance action.
   Future<bool> submit(
     AttendanceAction action,
     DashboardSnapshotModel data,
@@ -95,60 +141,16 @@ class AttendanceController extends ChangeNotifier {
         location: location,
       );
       await _cache.save(event);
-      _publish(events: await _cache.read(), isSubmitting: true);
-
-      final dependsOnPending = events.any(
-        (previous) =>
-            previous.sessionId == event.sessionId &&
-            previous.status == AttendanceSyncStatus.pending,
-      );
-      if (dependsOnPending) {
-        _publish(feedback: AttendanceFeedback.savedPending);
-        return false;
-      }
-      return await _send(event);
+      _lastEventId = event.id;
+      final saved = await _cache.read();
+      _publish(events: saved, feedback: _feedbackFor(saved));
+      return true;
     } on AttendanceRuleException catch (error) {
       _publish(feedback: error.feedback);
     } catch (_) {
       _publish(feedback: AttendanceFeedback.storageError);
     }
     return false;
-  }
-
-  // Records acknowledgement or rejection while preserving uncertain events for retry.
-  Future<bool> _send(AttendanceEventModel event) async {
-    try {
-      await _service.submit(event);
-      await _cache.save(event.withStatus(AttendanceSyncStatus.synced));
-      _publish(
-        events: await _cache.read(),
-        feedback: event.action == AttendanceAction.checkIn
-            ? AttendanceFeedback.checkedIn
-            : AttendanceFeedback.checkedOut,
-      );
-      return true;
-    } on ApiException catch (error) {
-      final code = error.statusCode;
-      if (code != null &&
-          code >= 400 &&
-          code < 500 &&
-          code != 408 &&
-          code != 429) {
-        await _cache.save(
-          event.withStatus(
-            AttendanceSyncStatus.rejected,
-            rejectionCode: error.code,
-          ),
-        );
-        _publish(
-          events: await _cache.read(),
-          feedback: AttendanceFeedback.rejected,
-        );
-        return true;
-      }
-      _publish(feedback: AttendanceFeedback.savedPending);
-      return false;
-    }
   }
 
   // Opens permission settings for a permanently denied location request.
@@ -168,6 +170,7 @@ class AttendanceController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _subscription?.cancel();
     super.dispose();
   }
 }

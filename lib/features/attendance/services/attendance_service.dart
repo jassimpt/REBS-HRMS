@@ -4,7 +4,9 @@ import '../models/attendance_event_model.dart';
 import '../../../core/network/api_exception.dart';
 
 class AttendanceService {
-  final _api = ApiService();
+  AttendanceService({String? baseUrl}) : _api = ApiService(baseUrl: baseUrl);
+
+  final ApiService _api;
 
   // Submits the original event ID and verifies the server acknowledgement.
   Future<void> submit(AttendanceEventModel event) async {

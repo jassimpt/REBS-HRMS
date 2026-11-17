@@ -13,6 +13,14 @@ abstract final class CompanyClock {
     return tz.timeZoneDatabase.locations;
   }
 
+  // Uses Hive-compatible millisecond precision for stable HTTP event payloads.
+  static String utcTimestamp(DateTime instant) {
+    return DateTime.fromMillisecondsSinceEpoch(
+      instant.millisecondsSinceEpoch,
+      isUtc: true,
+    ).toIso8601String();
+  }
+
   // Converts an instant into the configured company timezone.
   static tz.TZDateTime inZone(DateTime instant, String timezone) {
     final location = _locations[timezone];
