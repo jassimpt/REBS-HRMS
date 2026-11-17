@@ -7,11 +7,22 @@ class AttendanceCacheService {
   static const boxName = 'attendance_events';
   final _storage = LocalStorageService();
   static final _changes = StreamController<void>.broadcast();
+  static Future<void> _operation = Future.value();
 
   Stream<void> get changes => _changes.stream;
 
-  // Restores the attendance event log in original action order.
-  Future<List<AttendanceEventModel>> read() async {
+  // Serializes access so readers cannot observe an event before its save finishes.
+  Future<T> _serialize<T>(Future<T> Function() operation) {
+    final result = _operation.then((_) => operation());
+    _operation = result.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {},
+    );
+    return result;
+  }
+
+  // Restores the attendance event log after earlier writes are durable.
+  Future<List<AttendanceEventModel>> read() => _serialize(() async {
     final box = await _storage.openBox<AttendanceEventModel>(boxName);
     final events = box.values.toList();
     events.sort((a, b) {
@@ -22,14 +33,14 @@ class AttendanceCacheService {
       final time = a.occurredAt.compareTo(b.occurredAt);
       return time != 0 ? time : a.id.compareTo(b.id);
     });
-    return List.unmodifiable(events);
-  }
+    return List<AttendanceEventModel>.unmodifiable(events);
+  });
 
   // Persists a new event or delivery update under its permanent event ID.
-  Future<void> save(AttendanceEventModel event) async {
+  Future<void> save(AttendanceEventModel event) => _serialize(() async {
     final box = await _storage.openBox<AttendanceEventModel>(boxName);
     await box.put(event.id, event);
     await box.flush();
     _changes.add(null);
-  }
+  });
 }
