@@ -49,4 +49,32 @@ void main() {
       }
     },
   );
+  test(
+    'Queue readers wait for an in-flight durable save before observing its event',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'rebs-cache-order-',
+      );
+      Hive.init(directory.path);
+      LocalStorageService.registerAdapters();
+      await Hive.openBox<AttendanceEventModel>(AttendanceCacheService.boxName);
+      try {
+        final cache = AttendanceCacheService();
+        final order = <String>[];
+        final saving = cache
+            .save(attendanceFixture())
+            .then((_) => order.add('saved'));
+        await Future<void>.value();
+        final reading = cache.read().then((events) {
+          order.add('read');
+          expect(events, hasLength(1));
+        });
+        await Future.wait([saving, reading]);
+        expect(order, ['saved', 'read']);
+      } finally {
+        await Hive.close();
+        await directory.delete(recursive: true);
+      }
+    },
+  );
 }
