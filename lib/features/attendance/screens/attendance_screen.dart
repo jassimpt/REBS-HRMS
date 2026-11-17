@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/text_constants.dart';
 import '../../../core/widgets/app_page_heading.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
-import '../../dashboard/widgets/dashboard_error.dart';
-import '../../dashboard/widgets/dashboard_loading.dart';
+import '../../../core/widgets/app_error_state.dart';
+import '../../../core/widgets/app_loading_state.dart';
 import '../../workspace/widgets/workspace_header.dart';
 import '../controllers/attendance_controller.dart';
 import '../controllers/attendance_sync_controller.dart';
@@ -61,9 +61,9 @@ class AttendanceScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
                   if (dashboard.state.isLoading || state.isLoading)
-                    const DashboardLoading()
+                    const AppLoadingState()
                   else if (summary == null)
-                    DashboardError(onRetry: dashboard.load)
+                    AppErrorState(onRetry: dashboard.load)
                   else ...[
                     TodayAttendanceCard(
                       record: summary.today,

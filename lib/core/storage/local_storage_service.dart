@@ -9,6 +9,10 @@ import '../../features/dashboard/models/dashboard_snapshot_model.dart';
 import '../../features/dashboard/models/employee_model.dart';
 import '../../features/dashboard/models/office_model.dart';
 import '../../features/leave/models/leave_balance_model.dart';
+import '../../features/leave/models/leave_type.dart';
+import '../../features/leave/models/leave_request_status.dart';
+import '../../features/leave/models/leave_request_model.dart';
+import '../../features/leave/models/leave_snapshot_model.dart';
 
 class LocalStorageService {
   static Future<void>? _initialization;
@@ -16,6 +20,7 @@ class LocalStorageService {
   // Registers generated adapters while preserving their stable type IDs.
   static void registerAdapters() {
     registerAttendanceAdapters();
+    registerLeaveAdapters();
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(OfficeModelAdapter());
     }
@@ -46,6 +51,20 @@ class LocalStorageService {
     }
     if (!Hive.isAdapterRegistered(8)) {
       Hive.registerAdapter(AttendanceLocationModelAdapter());
+    }
+  }
+
+  // Registers typed leave history adapters using new stable type IDs.
+  static void registerLeaveAdapters() {
+    if (!Hive.isAdapterRegistered(9)) Hive.registerAdapter(LeaveTypeAdapter());
+    if (!Hive.isAdapterRegistered(10)) {
+      Hive.registerAdapter(LeaveRequestStatusAdapter());
+    }
+    if (!Hive.isAdapterRegistered(11)) {
+      Hive.registerAdapter(LeaveRequestModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(12)) {
+      Hive.registerAdapter(LeaveSnapshotModelAdapter());
     }
   }
 

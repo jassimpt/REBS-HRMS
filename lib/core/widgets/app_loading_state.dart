@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/text_constants.dart';
-import '../../../core/widgets/app_card.dart';
+import '../constants/text_constants.dart';
+import 'app_card.dart';
 
-class DashboardLoading extends StatelessWidget {
-  const DashboardLoading({super.key});
+class AppLoadingState extends StatelessWidget {
+  const AppLoadingState({
+    this.label = TextConstants.loadingDashboard,
+    super.key,
+  });
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -13,12 +18,10 @@ class DashboardLoading extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            const CircularProgressIndicator(
-              semanticsLabel: TextConstants.loadingDashboard,
-            ),
+            CircularProgressIndicator(semanticsLabel: label),
             const SizedBox(height: 24),
             Text(
-              TextConstants.loadingDashboard,
+              label,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge,
             ),

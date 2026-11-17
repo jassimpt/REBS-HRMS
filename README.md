@@ -4,9 +4,9 @@ An employee workspace for Android and iOS, built with Flutter and Provider.
 
 ## Current checkpoint
 
-Implemented: responsive workspace navigation, employee dashboard, company-time attendance summary, latest five attendance records, leave balances, loading/error/empty states, pull-to-refresh, persistent offline dashboard viewing, GPS attendance check-in/check-out, manual synchronization, automatic reconnect/startup/resume synchronization, and safe ordered retries.
+Implemented: responsive workspace navigation, employee dashboard, company-time attendance summary, latest five attendance records, leave balances, loading/error/empty states, pull-to-refresh, persistent offline dashboard viewing, GPS attendance check-in/check-out, manual synchronization, automatic reconnect/startup/resume synchronization, safe ordered retries, and leave applications with cached request history.
 
-Pending: leave application/history, remaining assignment tests, final device verification, final APK, and demonstration video. Leave remains a placeholder. No background execution while the app is terminated is promised.
+Pending: final Android/iOS device verification, submission packaging, debug APK, demonstration video, and final documentation of actual time and remaining limitations. No background execution while the app is terminated is promised.
 
 ## Run locally
 
@@ -40,10 +40,12 @@ The API uses real HTTP; fixture data lives in `tool/mock_api.dart`, never in wid
 | `GET /attendance?month=YYYY-MM&limit=100` | Optional month filtering |
 | `POST /attendance/events` | Submit a GPS attendance event using a permanent event ID |
 | `GET /leave/balance` | Available casual and sick days |
+| `GET /leave/requests` | Pending, Approved and Rejected leave history |
+| `POST /leave/requests` | Validate and submit an online leave application |
 | `GET /health` | Current mock scenario |
 | `POST /mock/scenario` | Switch demonstration scenarios without restarting |
 
-The optional `limit` query allows the dashboard's five recent records to cross month boundaries. The leave submission endpoints will be added in their checkpoint.
+The optional `limit` query allows the dashboard's five recent records to cross month boundaries.
 
 Start a repeatable scenario:
 
@@ -51,7 +53,7 @@ Start a repeatable scenario:
 dart run tool/mock_api.dart --scenario=slow --today=checked-in
 ```
 
-Scenarios: `success`, `empty` (no attendance), `slow` (3 seconds), `timeout` (12 seconds, exceeding the 10-second client timeout), `server-error` (HTTP 503), `invalid-response` (unexpected JSON structure), `duplicate-attendance` (409 on new attendance events), and `timeout-after-accept` (accepts and persists attendance before delaying its response for 12 seconds).
+Scenarios: `success`, `empty` (no attendance or seed leave history), `slow` (3 seconds), `timeout` (12 seconds, exceeding the 10-second client timeout), `server-error` (HTTP 503), `invalid-response` (unexpected JSON structure), `duplicate-attendance` (409 on new attendance events), `timeout-after-accept` (persists a submitted attendance/leave action before delaying its response for 12 seconds), and `leave-validation-rejection` (HTTP 422 for a valid new leave application).
 
 Today's fixtures: `not-checked-in` (default), `checked-in`, `checked-out`. Fixtures use the current company date; today's check-in is one hour before now, bounded by company midnight. Historical sessions run 09:15–17:30 in company time. Real submissions update the attendance history and take precedence over the seed fixtures for their company date. Fixture timestamps remain stable until the configured date/status changes.
 
@@ -63,7 +65,7 @@ curl -X POST http://127.0.0.1:8080/mock/scenario \
   -d '{"scenario":"success","today":"checked-out"}'
 ```
 
-Supported startup options: `--port=8080`, `--timezone=Asia/Kolkata`, `--office-lat=12.9716`, `--office-lng=77.5946`, `--scenario=success`, `--today=not-checked-in`, and `--storage=.dart_tool/mock_api/attendance.json`. Accepted event IDs and session updates persist in this ignored local JSON file across server restarts. Unit tests use an isolated in-memory server or a temporary file.
+Supported startup options: `--port=8080`, `--timezone=Asia/Kolkata`, `--office-lat=12.9716`, `--office-lng=77.5946`, `--scenario=success`, `--today=not-checked-in`, and `--storage=.dart_tool/mock_api/attendance.json`. Accepted event IDs and session updates persist in this ignored local JSON file across server restarts. Leave applications are stored separately in `$storagePath.leave.json`, for example `.dart_tool/mock_api/attendance.json.leave.json`. Using a new `--storage` filename starts both modules with fresh server data. Tests use isolated in-memory servers or temporary files.
 
 To test offline viewing: load the dashboard successfully, stop the mock server, refresh, then close/reopen the app. The saved dashboard remains available with a server-unreachable notice. A server outage is not labelled as confirmed device disconnection. Restart the server and refresh to recover. A first launch without a saved snapshot displays an error and retry action.
 
@@ -98,11 +100,26 @@ For an uncertain server outcome, use `--scenario=timeout-after-accept`. The serv
 
 To demonstrate rejection, switch to `duplicate-attendance` while actions are pending, then synchronize. Review each rejected action in Attendance activity. Rejected actions are retained for review and are not automatically retried.
 
+## Leave testing
+
+Restart the mock API to load the leave endpoints, and hot restart the Flutter app to register the new generated Hive adapters. No new native dependency is added in this checkpoint.
+
+The server includes historical Pending, Approved and Rejected examples. Initial allowances are 10 casual and 6 sick days; the sample approved casual request uses 2 days and the pending sick request reserves 1 day, leaving the dashboard's initial available balances at 8 casual and 5 sick. New requests start Pending and reserve days immediately. Rejected examples do not reserve balance. Approval administration is outside this employee app's scope.
+
+1. Open Leave and verify balances and all three example statuses.
+2. Apply for a future date range with a reason containing at least 10 non-whitespace characters. Verify Pending status, updated balance and the matching dashboard balance.
+3. Try a short/whitespace-only reason, more days than the selected type's remaining balance, or dates overlapping the newly submitted request. Validation must prevent submission. Date pickers prevent past starts and reversed ranges; service tests also verify those cases independently.
+4. Switch the mock server to `leave-validation-rejection`, submit a locally valid non-overlapping request, and verify server rejection keeps the input. Return the scenario to `success` afterward.
+5. Stop the API and refresh Leave. Previously loaded history and balance must remain visible with a notice. A new submission fails without being queued; its inputs remain in memory for retry. Close/reopen the app to verify the loaded request history survives. Unsubmitted form drafts are not persisted across app restarts.
+6. Use `timeout-after-accept` to test an uncertain submission. Refresh history to inspect the outcome, or retry the unchanged form after restoring `success`. The request ID stays the same and the server does not reserve balance twice. Editing the form starts a new draft identity.
+
+Leave ranges are inclusive calendar dates in the company timezone, including weekends and holidays. Pending and Approved requests block overlap; Rejected requests do not. The chosen leave type has its own available balance. The server repeats all validation using its latest requests and balances, even when cached client validation passed. Balances and requests are cached as one typed snapshot.
+
 ## Architecture and storage
 
-Features own their models, services, controllers, states, screens and widgets. Provider controllers manage module state. DashboardService loads employee configuration; AttendanceService loads attendance; LeaveBalanceService loads balances. DashboardCacheService owns dashboard persistence. AttendanceController validates and saves new actions; AttendanceSyncController owns connectivity, lifecycle triggers, counters and retries; AttendanceSyncService processes the durable queue. AttendanceCacheService publishes changes only after flushing to Hive. Dashboard and attendance views refresh from those changes. Shared HTTP, Hive initialization, formatting and reusable UI live in `core`. There are no repositories, dependency injection framework, or application `setState` calls.
+Features own their models, services, controllers, states, screens and widgets. Provider controllers manage module state. DashboardService loads employee configuration; AttendanceService loads attendance; LeaveBalanceService loads balances. DashboardCacheService owns dashboard persistence. AttendanceController validates and saves new actions; AttendanceSyncController owns connectivity, lifecycle triggers, counters and retries; AttendanceSyncService processes the durable queue. AttendanceCacheService publishes changes only after flushing to Hive. Dashboard and attendance views refresh from those changes. LeaveFormController owns the draft, validation and submission state; LeaveRequestsController owns list loading and cached snapshots. LeaveRequestsService, LeaveBalanceService, LeaveCacheService and LeaveRulesService keep HTTP, balances, persistence and rules separate. Shared HTTP, Hive initialization, formatting and reusable UI live in `core`. There are no repositories, dependency injection framework, or application `setState` calls.
 
-Hive stores a typed complete dashboard snapshot. Generated adapters cover OfficeModel (type ID 0), EmployeeModel (1), AttendanceRecordModel (2), LeaveBalanceModel (3), DashboardSnapshotModel (4), AttendanceEventModel (5), AttendanceAction (6), AttendanceSyncStatus (7), and AttendanceLocationModel (8). Type IDs and existing field numbers must remain stable as models evolve. The snapshot is replaced only after all three HTTP calls succeed; failures retain the previous complete snapshot. Storage failures are shown separately from network failures.
+Hive stores a typed complete dashboard snapshot. Generated adapters cover OfficeModel (type ID 0), EmployeeModel (1), AttendanceRecordModel (2), LeaveBalanceModel (3), DashboardSnapshotModel (4), AttendanceEventModel (5), AttendanceAction (6), AttendanceSyncStatus (7), AttendanceLocationModel (8), LeaveType (9), LeaveRequestStatus (10), LeaveRequestModel (11), and LeaveSnapshotModel (12). Type IDs and existing field numbers must remain stable as models evolve. The snapshot is replaced only after all three HTTP calls succeed; failures retain the previous complete snapshot. Storage failures are shown separately from network failures.
 
 Regenerate adapters after changing annotated models:
 
@@ -123,7 +140,7 @@ flutter analyze
 flutter test
 ```
 
-Tests cover automatic reconnect/startup/resume processing, foreground retry after a backend outage, ordered queue synchronization after Hive reopens, dependent-checkout rejection, manual sync widgets, rapid-tap protection, attendance rules, GPS permission states, geofence boundaries, pending event persistence, server idempotency including timeout-after-accept and server restart, pending-state widgets, real mock HTTP responses and failure classification, typed Hive persistence across close/reopen, company timezone boundaries and daylight saving, loading/error/empty widgets, navigation, and responsive layouts with enlarged text. Android/iOS device checks and the remaining assignment tests are completed at their relevant checkpoints.
+Tests cover leave date/reason/balance/overlap rules, server validation with stale client history, offline leave history after Hive reopen, online-only submission, repeated-tap and timeout safety, leave form/date-picker behavior and all statuses with enlarged text, automatic reconnect/startup/resume processing, foreground retry after a backend outage, ordered queue synchronization after Hive reopens, dependent-checkout rejection, manual sync widgets, rapid-tap protection, attendance rules, GPS permission states, geofence boundaries, pending event persistence, server idempotency including timeout-after-accept and server restart, pending-state widgets, real mock HTTP responses and failure classification, typed Hive persistence across close/reopen, company timezone boundaries and daylight saving, loading/error/empty widgets, navigation, and responsive layouts with enlarged text. Android/iOS device checks and the remaining assignment tests are completed at their relevant checkpoints.
 
 ## Submission notes
 

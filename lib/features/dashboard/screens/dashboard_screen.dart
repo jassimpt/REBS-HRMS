@@ -7,9 +7,9 @@ import '../controllers/dashboard_controller.dart';
 import '../../attendance/controllers/attendance_controller.dart';
 import '../../attendance/widgets/attendance_sync_panel.dart';
 import '../widgets/dashboard_content.dart';
-import '../widgets/dashboard_error.dart';
+import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_page_heading.dart';
-import '../widgets/dashboard_loading.dart';
+import '../../../core/widgets/app_loading_state.dart';
 import '../widgets/dashboard_notice.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -60,9 +60,9 @@ class DashboardScreen extends StatelessWidget {
                     ],
                     const AttendanceSyncPanel(hideWhenIdle: true),
                     if (state.isLoading)
-                      const DashboardLoading()
+                      const AppLoadingState()
                     else if (data == null)
-                      DashboardError(onRetry: controller.load)
+                      AppErrorState(onRetry: controller.load)
                     else
                       DashboardContent(
                         data: summary!.dashboard,

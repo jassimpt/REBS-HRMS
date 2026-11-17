@@ -27,6 +27,21 @@ abstract final class AppTheme {
       bodyLarge: TextStyle(height: 1.5),
       bodyMedium: TextStyle(height: 1.5),
     ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.background,
+      contentPadding: const EdgeInsets.all(16),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorMaxLines: 4,
+    ),
     navigationBarTheme: const NavigationBarThemeData(
       backgroundColor: AppColors.surface,
       indicatorColor: AppColors.primaryContainer,

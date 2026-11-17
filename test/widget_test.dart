@@ -11,6 +11,9 @@ import 'package:rebs_hrms/features/dashboard/screens/dashboard_screen.dart';
 import 'package:rebs_hrms/features/attendance/screens/attendance_screen.dart';
 import 'package:rebs_hrms/features/attendance/models/attendance_event_model.dart';
 import 'package:rebs_hrms/features/attendance/services/attendance_cache_service.dart';
+import 'package:rebs_hrms/features/leave/screens/leave_screen.dart';
+import 'package:rebs_hrms/features/leave/models/leave_snapshot_model.dart';
+import 'package:rebs_hrms/features/leave/services/leave_cache_service.dart';
 
 void main() {
   late Directory directory;
@@ -20,6 +23,7 @@ void main() {
     LocalStorageService.registerAdapters();
     await Hive.openBox<DashboardSnapshotModel>(DashboardCacheService.boxName);
     await Hive.openBox<AttendanceEventModel>(AttendanceCacheService.boxName);
+    await Hive.openBox<LeaveSnapshotModel>(LeaveCacheService.boxName);
   });
   tearDownAll(() async {
     await Hive.close();
@@ -49,7 +53,7 @@ void main() {
 
     await tester.tap(find.text(TextConstants.leave));
     await tester.pumpAndSettle();
-    expect(find.text(TextConstants.leaveTitle), findsOneWidget);
+    expect(find.byType(LeaveScreen), findsOneWidget);
 
     await tester.tap(find.text(TextConstants.overview));
     await tester.pumpAndSettle();
@@ -81,7 +85,7 @@ void main() {
       );
       await tester.tap(find.text(TextConstants.leave));
       await tester.pumpAndSettle();
-      expect(find.text(TextConstants.leaveTitle), findsOneWidget);
+      expect(find.byType(LeaveScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     });
