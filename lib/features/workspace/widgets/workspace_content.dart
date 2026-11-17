@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/text_constants.dart';
 import '../../../core/widgets/app_empty_state.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
 import '../states/workspace_state.dart';
 import 'workspace_header.dart';
 
@@ -12,6 +13,7 @@ class WorkspaceContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (section == WorkspaceSection.overview) return const DashboardScreen();
     final theme = Theme.of(context);
     final (title, subtitle, icon, emptyTitle, description) = switch (section) {
       WorkspaceSection.overview => (

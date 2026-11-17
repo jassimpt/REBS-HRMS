@@ -1,9 +1,26 @@
+import 'dart:io';
+import 'package:hive/hive.dart';
+import 'package:rebs_hrms/core/storage/local_storage_service.dart';
+import 'package:rebs_hrms/features/dashboard/models/dashboard_snapshot_model.dart';
+import 'package:rebs_hrms/features/dashboard/services/dashboard_cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebs_hrms/app/app.dart';
 import 'package:rebs_hrms/core/constants/text_constants.dart';
+import 'package:rebs_hrms/features/dashboard/widgets/dashboard_heading.dart';
 
 void main() {
+  late Directory directory;
+  setUpAll(() async {
+    directory = await Directory.systemTemp.createTemp('rebs-workspace-test-');
+    Hive.init(directory.path);
+    LocalStorageService.registerAdapters();
+    await Hive.openBox<DashboardSnapshotModel>(DashboardCacheService.boxName);
+  });
+  tearDownAll(() async {
+    await Hive.close();
+    await directory.delete(recursive: true);
+  });
   testWidgets('Workspace navigation changes the visible section', (
     tester,
   ) async {
@@ -13,12 +30,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MyApp());
-    expect(find.text(TextConstants.overviewTitle), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byType(DashboardHeading), findsOneWidget);
 
     await tester.tap(find.text(TextConstants.attendance));
     await tester.pumpAndSettle();
     expect(find.text(TextConstants.attendanceTitle), findsOneWidget);
-    expect(find.text(TextConstants.overviewTitle), findsNothing);
+    expect(find.byType(DashboardHeading), findsNothing);
 
     await tester.tap(find.text(TextConstants.leave));
     await tester.pumpAndSettle();
@@ -26,7 +44,8 @@ void main() {
 
     await tester.tap(find.text(TextConstants.overview));
     await tester.pumpAndSettle();
-    expect(find.text(TextConstants.overviewTitle), findsOneWidget);
+    expect(find.byType(DashboardHeading), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
   });
 
   for (final size in [
@@ -55,6 +74,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(TextConstants.leaveTitle), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
     });
   }
 }

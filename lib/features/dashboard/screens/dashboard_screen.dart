@@ -1,0 +1,74 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/constants/text_constants.dart';
+import '../../workspace/widgets/workspace_header.dart';
+import '../controllers/dashboard_controller.dart';
+import '../widgets/dashboard_content.dart';
+import '../widgets/dashboard_error.dart';
+import '../widgets/dashboard_heading.dart';
+import '../widgets/dashboard_loading.dart';
+import '../widgets/dashboard_notice.dart';
+
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<DashboardController>();
+    final state = controller.state;
+    final data = state.data;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return RefreshIndicator(
+          onRefresh: controller.load,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(constraints.maxWidth < 600 ? 20 : 40),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const WorkspaceHeader(),
+                    const SizedBox(height: 32),
+                    DashboardHeading(
+                      isRefreshing: state.isLoading || state.isRefreshing,
+                      onRefresh: controller.load,
+                    ),
+                    const SizedBox(height: 24),
+                    if (state.isRefreshing) ...[
+                      const LinearProgressIndicator(
+                        semanticsLabel: TextConstants.refreshing,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (state.notice != null) ...[
+                      DashboardNoticeBanner(
+                        notice: state.notice!,
+                        hasCachedData: data != null,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (state.isLoading)
+                      const DashboardLoading()
+                    else if (data == null)
+                      DashboardError(onRetry: controller.load)
+                    else
+                      DashboardContent(
+                        data: data,
+                        todayRecord: controller.todayRecord,
+                        workingDuration: controller.workingDuration,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

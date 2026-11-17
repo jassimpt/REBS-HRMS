@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/constants/text_constants.dart';
 import '../core/theme/app_theme.dart';
+import '../features/dashboard/controllers/dashboard_controller.dart';
 import '../features/workspace/controllers/workspace_controller.dart';
 import '../features/workspace/screens/workspace_screen.dart';
 
@@ -11,8 +12,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => WorkspaceController(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WorkspaceController()),
+        ChangeNotifierProvider(create: (_) => DashboardController()),
+      ],
       child: MaterialApp(
         title: TextConstants.appName,
         debugShowCheckedModeBanner: false,
