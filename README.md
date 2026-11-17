@@ -2,6 +2,12 @@
 
 A Flutter employee workspace for Android and iOS with attendance, leave applications and offline support.
 
+## Submission links
+
+- [Android release APK](https://drive.google.com/file/d/1oRTe40RkamoV7PRsv67ZXuX1-ubvFUMU/view?usp=sharing)
+- [Demo video](https://drive.google.com/file/d/16hYjYdn4hzURA6KRZjy-_P4iyXyLeOmy/view?usp=sharing)
+- [GitHub repository](https://github.com/jassimpt/REBS-HRMS)
+
 ## Setup
 
 Use a Flutter SDK compatible with Dart `^3.9.2`. Start an Android emulator or iOS simulator, then run these commands from the project root.
@@ -28,12 +34,24 @@ Open another terminal in the project root:
 flutter run
 ```
 
-Default server addresses:
+The app defaults to `https://deck-scoop-edging.ngrok-free.dev`. For remote testing, keep the mock API running and start ngrok in a separate terminal:
+
+```bash
+ngrok http 8080
+```
+
+Keep the computer awake and both processes running while testing the submitted APK. If the forwarding URL changes, provide the new URL using `--dart-define=API_BASE_URL=https://YOUR_NGROK_DOMAIN` when running or building the app.
+
+For local testing, override `API_BASE_URL` with the appropriate address:
 
 | Device | Address |
 | --- | --- |
 | Android Emulator | `http://10.0.2.2:8080` |
 | iOS Simulator | `http://127.0.0.1:8080` |
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
 
 For a physical device, connect it and the computer to the same Wi-Fi and use the computer's LAN address:
 
