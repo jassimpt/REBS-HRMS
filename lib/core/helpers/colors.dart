@@ -12,4 +12,7 @@ abstract final class AppColors {
   static const outline = Color(0xFF71818D);
   static const border = Color(0xFFDFE6EB);
   static const error = Color(0xFFBA1A1A);
+  static const warning = Color(0xFF805500);
+  static const warningContainer = Color(0xFFFFF4D9);
+  static const errorContainer = Color(0xFFFFEDEA);
 }
