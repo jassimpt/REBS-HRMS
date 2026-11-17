@@ -55,6 +55,57 @@ abstract final class TextConstants {
   static const synced = 'Synced';
   static const inProgress = 'In progress';
   static const companyTime = 'Company time';
+  static const pendingSync = 'Pending Sync';
+  static const rejected = 'Rejected';
+  static const checkInSuccess = 'Checked in successfully.';
+  static const checkOutSuccess = 'Checked out successfully.';
+  static const attendanceSavedPending =
+      'Saved on this device. Your attendance is pending synchronization.';
+  static const attendanceRejected =
+      'The server rejected this action. Your attendance has been refreshed.';
+  static const attendanceStorageError =
+      'We could not save your attendance safely. Please try again.';
+  static const locationDenied =
+      'Location permission is needed to record attendance. Please allow access and try again.';
+  static const locationPermanentlyDenied =
+      'Location permission is blocked. Enable it in app settings and try again.';
+  static const locationDisabled =
+      'Location services are turned off. Enable them and try again.';
+  static const locationUnavailable =
+      'We could not get a current location. Move to an area with a better GPS signal and try again.';
+  static const outsideOffice =
+      'You are outside the permitted office area. Move within the office attendance radius and try again.';
+  static const checkInRequired = 'Check in before checking out.';
+  static const alreadyCheckedIn = 'You have already checked in today.';
+  static const alreadyCheckedOut =
+      'You have already completed attendance for today.';
+  static const attendanceDayChanged =
+      'The company date changed while checking your location. Please try again.';
+  static const openAppSettings = 'Open app settings';
+  static const openLocationSettings = 'Open location settings';
+  static const recordingAttendance =
+      'Checking your location and recording attendance…';
+  static const attendanceComplete = 'Your attendance is complete for today.';
+  static const attendanceActivity = 'Attendance activity';
+
+  // Explains where attendance may be recorded.
+  static String officeRadius(int metres) =>
+      'Check in and out within $metres metres of this office. Your current GPS location is captured for each action.';
+
+  // Formats captured coordinates for reviewing an attendance action.
+  static String coordinates(double latitude, double longitude) =>
+      'Location · ${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
+
+  // Maps server rejection codes to clear attendance messages.
+  static String attendanceRejectionReason(String? code) => switch (code) {
+    'attendance_exists' =>
+      'Attendance already exists for this session or company date.',
+    'check_in_required' => checkInRequired,
+    'invalid_location' => 'The server could not validate this location.',
+    'idempotency_mismatch' =>
+      'This event ID was already used for a different action.',
+    _ => 'The server could not accept this attendance action.',
+  };
 
   // Formats a working duration with consistent unit labels.
   static String hoursAndMinutes(int hours, int minutes) =>

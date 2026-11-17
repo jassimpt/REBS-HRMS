@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/text_constants.dart';
+import '../constants/text_constants.dart';
 
-class DashboardHeading extends StatelessWidget {
-  const DashboardHeading({
+class AppPageHeading extends StatelessWidget {
+  const AppPageHeading({
+    required this.title,
+    required this.subtitle,
     required this.isRefreshing,
     required this.onRefresh,
     super.key,
   });
 
+  final String title;
+  final String subtitle;
   final bool isRefreshing;
   final VoidCallback onRefresh;
 
@@ -32,13 +36,10 @@ class DashboardHeading extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    TextConstants.overview,
-                    style: theme.textTheme.headlineMedium,
-                  ),
+                  Text(title, style: theme.textTheme.headlineMedium),
                   const SizedBox(height: 6),
                   Text(
-                    TextConstants.overviewSubtitle,
+                    subtitle,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

@@ -1,8 +1,18 @@
 import '../../../core/network/api_service.dart';
 import '../models/attendance_record_model.dart';
+import '../models/attendance_event_model.dart';
+import '../../../core/network/api_exception.dart';
 
 class AttendanceService {
   final _api = ApiService();
+
+  // Submits the original event ID and verifies the server acknowledgement.
+  Future<void> submit(AttendanceEventModel event) async {
+    final response = await _api.post('/attendance/events', event.toJson());
+    if (response['event_id'] != event.id) {
+      throw const ApiException(ApiFailure.invalidResponse);
+    }
+  }
 
   // Loads the latest five sessions across month boundaries.
   Future<List<AttendanceRecordModel>> fetchRecent() async {

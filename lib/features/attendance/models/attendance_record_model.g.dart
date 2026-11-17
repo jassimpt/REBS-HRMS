@@ -21,13 +21,16 @@ class AttendanceRecordModelAdapter extends TypeAdapter<AttendanceRecordModel> {
       date: fields[1] as String,
       checkIn: fields[2] as DateTime,
       checkOut: fields[3] as DateTime?,
+      syncStatus: fields[4] == null
+          ? AttendanceSyncStatus.synced
+          : fields[4] as AttendanceSyncStatus,
     );
   }
 
   @override
   void write(BinaryWriter writer, AttendanceRecordModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +38,9 @@ class AttendanceRecordModelAdapter extends TypeAdapter<AttendanceRecordModel> {
       ..writeByte(2)
       ..write(obj.checkIn)
       ..writeByte(3)
-      ..write(obj.checkOut);
+      ..write(obj.checkOut)
+      ..writeByte(4)
+      ..write(obj.syncStatus);
   }
 
   @override

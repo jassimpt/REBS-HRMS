@@ -4,7 +4,8 @@ import '../../../core/constants/text_constants.dart';
 import '../../../core/helpers/company_clock.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_status_badge.dart';
-import '../../attendance/models/attendance_record_model.dart';
+import '../models/attendance_record_model.dart';
+import 'attendance_sync_badge.dart';
 import 'attendance_metric.dart';
 
 class TodayAttendanceCard extends StatelessWidget {
@@ -49,6 +50,10 @@ class TodayAttendanceCard extends StatelessWidget {
             label: status,
             tone: record == null ? StatusTone.neutral : StatusTone.success,
           ),
+          if (record != null) ...[
+            const SizedBox(height: 10),
+            AttendanceSyncBadge(status: record!.syncStatus),
+          ],
           const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {

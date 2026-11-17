@@ -35,29 +35,6 @@ class DashboardController extends ChangeNotifier {
 
   DashboardState get state => _state;
 
-  AttendanceRecordModel? get todayRecord {
-    final data = _state.data;
-    if (data == null) return null;
-    final date = CompanyClock.dateKey(
-      DateTime.now(),
-      data.employee.office.timezone,
-    );
-    for (final record in data.attendance) {
-      if (record.date == date) return record;
-    }
-    return null;
-  }
-
-  Duration get workingDuration {
-    final record = todayRecord;
-    if (record == null) return Duration.zero;
-    final now = DateTime.now().toUtc();
-    final end = record.checkOut ?? now;
-    return end.isBefore(record.checkIn)
-        ? Duration.zero
-        : end.difference(record.checkIn);
-  }
-
   // Publishes a state only while this controller is active.
   void _publish(DashboardState state) {
     if (_disposed) return;

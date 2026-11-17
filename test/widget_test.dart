@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rebs_hrms/app/app.dart';
 import 'package:rebs_hrms/core/constants/text_constants.dart';
-import 'package:rebs_hrms/features/dashboard/widgets/dashboard_heading.dart';
+import 'package:rebs_hrms/features/dashboard/screens/dashboard_screen.dart';
+import 'package:rebs_hrms/features/attendance/screens/attendance_screen.dart';
+import 'package:rebs_hrms/features/attendance/models/attendance_event_model.dart';
+import 'package:rebs_hrms/features/attendance/services/attendance_cache_service.dart';
 
 void main() {
   late Directory directory;
@@ -16,6 +19,7 @@ void main() {
     Hive.init(directory.path);
     LocalStorageService.registerAdapters();
     await Hive.openBox<DashboardSnapshotModel>(DashboardCacheService.boxName);
+    await Hive.openBox<AttendanceEventModel>(AttendanceCacheService.boxName);
   });
   tearDownAll(() async {
     await Hive.close();
@@ -31,12 +35,17 @@ void main() {
 
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
-    expect(find.byType(DashboardHeading), findsOneWidget);
+    expect(find.byType(DashboardScreen), findsOneWidget);
 
-    await tester.tap(find.text(TextConstants.attendance));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text(TextConstants.attendance),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.text(TextConstants.attendanceTitle), findsOneWidget);
-    expect(find.byType(DashboardHeading), findsNothing);
+    expect(find.byType(AttendanceScreen), findsOneWidget);
+    expect(find.byType(DashboardScreen), findsNothing);
 
     await tester.tap(find.text(TextConstants.leave));
     await tester.pumpAndSettle();
@@ -44,7 +53,7 @@ void main() {
 
     await tester.tap(find.text(TextConstants.overview));
     await tester.pumpAndSettle();
-    expect(find.byType(DashboardHeading), findsOneWidget);
+    expect(find.byType(DashboardScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

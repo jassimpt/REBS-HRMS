@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/text_constants.dart';
 import '../../../core/helpers/company_clock.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_status_badge.dart';
-import '../../attendance/models/attendance_record_model.dart';
+import '../models/attendance_record_model.dart';
+import 'attendance_sync_badge.dart';
 import 'attendance_metric.dart';
 
 class AttendanceHistoryItem extends StatelessWidget {
@@ -36,10 +36,7 @@ class AttendanceHistoryItem extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const AppStatusBadge(
-                label: TextConstants.synced,
-                tone: StatusTone.success,
-              ),
+              AttendanceSyncBadge(status: record.syncStatus),
             ],
           ),
           const SizedBox(height: 16),
