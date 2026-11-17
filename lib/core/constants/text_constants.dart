@@ -56,6 +56,30 @@ abstract final class TextConstants {
   static const inProgress = 'In progress';
   static const companyTime = 'Company time';
   static const pendingSync = 'Pending Sync';
+  static const attendanceSync = 'Attendance sync';
+  static const syncNow = 'Sync Now';
+  static const syncRestoring = 'Checking saved attendance…';
+  static const syncInProgress = 'Synchronizing attendance…';
+  static const syncUpToDate = 'No attendance actions are waiting to sync.';
+  static const syncOffline =
+      'You are offline. Saved actions will sync when you reconnect.';
+  static const syncServerUnavailable =
+      'The server is unavailable. Your actions are saved and will retry automatically.';
+  static const syncTimedOut =
+      'The server did not respond in time. Your actions are saved and will retry safely.';
+  static const syncInvalidResponse =
+      'The server response could not be verified. Your actions remain saved for retry.';
+  static const syncStorageError =
+      'We could not access saved attendance. Please try again.';
+  static const syncRejected =
+      'Some actions were rejected. Review them in Attendance activity.';
+  static const syncPending = 'Saved actions are waiting to synchronize.';
+
+  // Labels the number of actions still waiting for acknowledgement.
+  static String pendingActions(int count) => '$count pending';
+
+  // Labels rejected actions that require review rather than automatic retry.
+  static String rejectedActions(int count) => '$count rejected';
   static const rejected = 'Rejected';
   static const checkInSuccess = 'Checked in successfully.';
   static const checkOutSuccess = 'Checked out successfully.';
@@ -101,6 +125,8 @@ abstract final class TextConstants {
     'attendance_exists' =>
       'Attendance already exists for this session or company date.',
     'check_in_required' => checkInRequired,
+    'check_in_rejected' =>
+      'This checkout could not be submitted because its check-in was rejected.',
     'invalid_location' => 'The server could not validate this location.',
     'idempotency_mismatch' =>
       'This event ID was already used for a different action.',

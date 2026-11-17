@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import '../../../core/helpers/company_clock.dart';
+
 part 'attendance_location_model.g.dart';
 
 @HiveType(typeId: 8)
@@ -35,6 +37,6 @@ class AttendanceLocationModel {
     'latitude': latitude,
     'longitude': longitude,
     'accuracy': accuracy,
-    'captured_at': capturedAt.toUtc().toIso8601String(),
+    'captured_at': CompanyClock.utcTimestamp(capturedAt),
   };
 }

@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import '../../../core/helpers/company_clock.dart';
+
 import 'attendance_action.dart';
 import 'attendance_location_model.dart';
 import 'attendance_sync_status.dart';
@@ -61,7 +63,7 @@ class AttendanceEventModel {
     'session_id': sessionId,
     'action': action.name,
     'company_date': companyDate,
-    'occurred_at': occurredAt.toUtc().toIso8601String(),
+    'occurred_at': CompanyClock.utcTimestamp(occurredAt),
     'location': location.toJson(),
   };
 
