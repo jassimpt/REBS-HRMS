@@ -1,8 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:timezone/timezone.dart' as tz;
+import 'package:rebs_hrms/features/attendance/models/attendance_event_model.dart';
+
+import 'services/mock_attendance_service.dart';
 
 import 'package:rebs_hrms/core/helpers/company_clock.dart';
 
@@ -13,6 +15,8 @@ const mockScenarios = {
   'timeout',
   'server-error',
   'invalid-response',
+  'duplicate-attendance',
+  'timeout-after-accept',
 };
 const todayStatuses = {'not-checked-in', 'checked-in', 'checked-out'};
 
@@ -34,6 +38,7 @@ Future<void> main(List<String> arguments) async {
   }
   try {
     final api = MockApiServer(
+      storagePath: options['storage'] ?? '.dart_tool/mock_api/attendance.json',
       scenario: options['scenario'] ?? 'success',
       todayStatus: options['today'] ?? 'not-checked-in',
       timezone: options['timezone'] ?? 'Asia/Kolkata',
@@ -59,6 +64,7 @@ class MockApiServer {
     this.timezone = 'Asia/Kolkata',
     this.officeLatitude = 12.9716,
     this.officeLongitude = 77.5946,
+    this.storagePath,
   });
 
   String scenario;
@@ -66,6 +72,10 @@ class MockApiServer {
   final String timezone;
   final double officeLatitude;
   final double officeLongitude;
+  final String? storagePath;
+  late final MockAttendanceService _attendanceService;
+  String? _fixtureKey;
+  List<Map<String, dynamic>> _fixtureRecords = [];
   HttpServer? _server;
 
   int get port => _server!.port;
@@ -77,6 +87,8 @@ class MockApiServer {
       throw const FormatException('Unknown scenario or attendance status');
     }
     CompanyClock.inZone(DateTime.now(), timezone);
+    _attendanceService = MockAttendanceService(storagePath: storagePath);
+    await _attendanceService.initialize();
     _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
     _server!.listen(_handle);
   }
@@ -109,7 +121,9 @@ class MockApiServer {
         _reply(request, {'scenario': scenario, 'today': todayStatus});
         return;
       }
-      if (request.method != 'GET') {
+      if (request.method != 'GET' &&
+          !(request.method == 'POST' &&
+              request.uri.path == '/attendance/events')) {
         _reply(request, {
           'message': 'Method not implemented in this checkpoint',
         }, status: 405);
@@ -130,6 +144,26 @@ class MockApiServer {
         _reply(request, {'unexpected': true});
         return;
       }
+      if (request.uri.path == '/attendance/events' &&
+          request.method == 'POST') {
+        final body =
+            jsonDecode(await utf8.decoder.bind(request).join())
+                as Map<String, dynamic>;
+        final event = AttendanceEventModel.fromJson(body);
+        final response = await _attendanceService.submit(
+          event,
+          _fixtures(),
+          timezone: timezone,
+          officeLatitude: officeLatitude,
+          officeLongitude: officeLongitude,
+          forceConflict: selectedScenario == 'duplicate-attendance',
+        );
+        if (selectedScenario == 'timeout-after-accept') {
+          await Future<void>.delayed(const Duration(seconds: 12));
+        }
+        _reply(request, response);
+        return;
+      }
       switch (request.uri.path) {
         case '/employee/me':
           _reply(request, {
@@ -146,9 +180,9 @@ class MockApiServer {
             },
           });
         case '/attendance':
-          var records = selectedScenario == 'empty'
-              ? <Map<String, dynamic>>[]
-              : _attendance();
+          var records = _attendanceService.records(
+            selectedScenario == 'empty' ? [] : _fixtures(),
+          );
           final month = request.uri.queryParameters['month'];
           if (month != null) {
             records = records
@@ -170,15 +204,30 @@ class MockApiServer {
         default:
           _reply(request, {'message': 'Endpoint not found'}, status: 404);
       }
+    } on MockAttendanceException catch (error) {
+      _reply(request, {'code': error.code}, status: error.status);
     } catch (_) {
-      if (!request.response.headers.chunkedTransferEncoding) {
-        _reply(request, {'message': 'Invalid request'}, status: 400);
+      try {
+        _reply(request, {'code': 'invalid_request'}, status: 400);
+      } catch (_) {
+        return;
       }
     }
   }
 
   // Generates UTC timestamps from company calendar dates, including month edges.
-  List<Map<String, dynamic>> _attendance() {
+  List<Map<String, dynamic>> _fixtures() {
+    final key =
+        '${CompanyClock.dateKey(DateTime.now(), timezone)}|$todayStatus';
+    if (_fixtureKey != key) {
+      _fixtureRecords = _createFixtures();
+      _fixtureKey = key;
+    }
+    return _fixtureRecords;
+  }
+
+  // Creates stable fixture timestamps until the company date or scenario changes.
+  List<Map<String, dynamic>> _createFixtures() {
     final now = CompanyClock.inZone(DateTime.now(), timezone);
     final records = <Map<String, dynamic>>[];
     if (todayStatus != 'not-checked-in') {
@@ -236,6 +285,6 @@ class MockApiServer {
     request.response.statusCode = status;
     request.response.headers.contentType = ContentType.json;
     request.response.write(jsonEncode(body));
-    unawaited(request.response.close());
+    request.response.close().ignore();
   }
 }

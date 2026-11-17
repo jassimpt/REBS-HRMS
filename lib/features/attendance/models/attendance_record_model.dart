@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import 'attendance_sync_status.dart';
+
 part 'attendance_record_model.g.dart';
 
 @HiveType(typeId: 2)
@@ -9,6 +11,7 @@ class AttendanceRecordModel {
     required this.date,
     required this.checkIn,
     this.checkOut,
+    this.syncStatus = AttendanceSyncStatus.synced,
   });
 
   @HiveField(0)
@@ -19,6 +22,9 @@ class AttendanceRecordModel {
   final DateTime checkIn;
   @HiveField(3)
   final DateTime? checkOut;
+
+  @HiveField(4, defaultValue: AttendanceSyncStatus.synced)
+  final AttendanceSyncStatus syncStatus;
 
   // Parses an attendance session with UTC event timestamps.
   factory AttendanceRecordModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +37,14 @@ class AttendanceRecordModel {
           : DateTime.parse(json['check_out'] as String).toUtc(),
     );
   }
+
+  // Serializes a confirmed session for mock server responses and persistence.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'date': date,
+    'check_in': checkIn.toUtc().toIso8601String(),
+    'check_out': checkOut?.toUtc().toIso8601String(),
+  };
 
   // Calculates elapsed time, freezing unfinished past-day sessions at midnight.
   Duration workingDuration(DateTime now, DateTime endOfDay) {

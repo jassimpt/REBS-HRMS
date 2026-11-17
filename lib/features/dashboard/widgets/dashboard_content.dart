@@ -5,10 +5,10 @@ import '../../../core/helpers/company_clock.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../attendance/models/attendance_record_model.dart';
 import '../models/dashboard_snapshot_model.dart';
-import 'attendance_history_item.dart';
+import '../../attendance/widgets/attendance_history_item.dart';
 import 'employee_card.dart';
 import 'leave_balance_card.dart';
-import 'today_attendance_card.dart';
+import '../../attendance/widgets/today_attendance_card.dart';
 
 class DashboardContent extends StatelessWidget {
   const DashboardContent({
